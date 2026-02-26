@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
-import * as userActions from "./store/actions";
-import jwtService from "../service/jwt";
+import React, { Component } from "react";
+import { connect } from "react-redux";
+import { bindActionCreators } from "redux";
+import PropTypes from "prop-types";
+
+import * as userActions from "app/auth/store/actions";
+import jwtService from "app/service/jwt";
 
 function SplashScreen() {
   return (
@@ -11,41 +14,80 @@ function SplashScreen() {
   );
 }
 
-const Auth = ({ children }) => {
-  const [waitAuthCheck, setWaitAuthCheck] = useState(true);
-  const dispatch = useDispatch();
+class Auth extends Component {
+  state = {
+    waitAuthCheck: true,
+  };
 
-  useEffect(() => {
-    const checkJwt = () =>
-      new Promise((resolve) => {
-        jwtService.on("onAutoLogin", () => {
-          jwtService
-            .signInWithRefreshToken()
-            .then((user) => {
-              dispatch(userActions.setUserData({
-                data: user.data,
-                role: [user.role],
-              }));
-              resolve();
-            })
-            .catch(() => resolve());
-        });
+  componentDidMount() {
+    return Promise.all([
+      // Comment the lines which you do not use
+      this.jwtCheck(),
+    ]).then(() => {
+      this.setState({ waitAuthCheck: false });
+    });
+  }
 
-        jwtService.on("onAutoLogout", (message) => {
-          if (message) console.log(message);
-          dispatch(userActions.logoutUser());
-          resolve();
-        });
-
-        jwtService.on("onNoAccessToken", () => resolve());
-
-        jwtService.init();
+  jwtCheck = () =>
+    new Promise((resolve) => {
+      jwtService.on("onAutoLogin", () => {
+        jwtService
+          .signInWithToken()
+          .then((user) => {
+            this.props.setUserData({
+              data: user.data,
+              role: user.role,
+            });
+            resolve();
+          })
+          .catch(() => {
+            resolve();
+          });
       });
 
-    checkJwt().then(() => setWaitAuthCheck(false));
-  }, [dispatch]);
+      jwtService.on("onAutoLogout", (message) => {
+        if (message) {
+          // this.props.showMessage({ message });
+          // console.log(message);
+        }
 
-  return waitAuthCheck ? <SplashScreen /> : <>{children}</>;
+        this.props.logout();
+
+        resolve();
+      });
+
+      jwtService.on("onNoAccessToken", () => {
+        resolve();
+      });
+
+      jwtService.init();
+
+      return Promise.resolve();
+    });
+
+  render() {
+    return this.state.waitAuthCheck ? (
+      <SplashScreen />
+    ) : (
+      <>{this.props.children}</>
+    );
+  }
+}
+
+function mapDispatchToProps(dispatch) {
+  return bindActionCreators(
+    {
+      logout: userActions.logoutUser,
+      setUserData: userActions.setUserData,
+    },
+    dispatch
+  );
+}
+
+Auth.propTypes = {
+  logout: PropTypes.func,
+  setUserData: PropTypes.func,
+  children: PropTypes.element,
 };
 
-export default Auth;
+export default connect(null, mapDispatchToProps)(Auth);

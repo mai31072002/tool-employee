@@ -11,8 +11,9 @@ import routes from "./configs/routes.config";
 import store from "./store";
 // import "moment/locale/vi";
 import AuthConfig from "./main/auth/auth.config";
-import Auth from "./main/auth/auth.config";
+import Auth from "app/auth/auth";
 import Authorization from "./auth/authorization";
+import HomeThemeProvider from "./layout/home_theme_provider";
 // import HomeConfig from "./main/home/home.config";
 // import LoginPage from './main/auth/login';
 import '../assets/style/style.css';
@@ -20,17 +21,19 @@ import '../assets/style/style.css';
 const App = (props) => 
     AuthConfig.guestPath.indexOf(props.path) === -1 ? (
         <AppContext.Provider value={{ routes }}>
-        <Provider store={store}>
-            <BrowserRouter>
-                <Auth>
-                    <Router history={history}>
-                        <Authorization>
-                            <Layout />
-                        </Authorization>
-                    </Router>
-                </Auth>
-            </BrowserRouter>
-        </Provider>
+            <Provider store={store}>
+                <BrowserRouter>
+                    <Auth>
+                        <Router history={history}>
+                            <Authorization>
+                                <HomeThemeProvider>
+                                    <Layout />
+                                </HomeThemeProvider>
+                            </Authorization>
+                        </Router>
+                    </Auth>
+                </BrowserRouter>
+            </Provider>
         </AppContext.Provider>
     ) : (
         <AppContext.Provider value={{ routes }}>

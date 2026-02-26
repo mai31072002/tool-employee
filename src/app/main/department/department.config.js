@@ -4,23 +4,23 @@ import React from "react";
 import { authRoles } from "app/auth";
 // import en from "./i18n/en";
 
-import { isMobile } from "react-device-detect";
+// import { isMobile } from "react-device-detect";
 // i18next.addResourceBundle("en", "login", en);
 
-const HomeConfig = {
+const DepartmentConfig = {
   settings: { layout: "admin" },
   auth: authRoles.onlyGuest,
   routes: [
     {
-      path: "/home",
+      path: "/department",
       exact: true,
-      component: React.lazy(() =>
-        !isMobile ? import("./home") : import("./home")
+      component: React.lazy(
+        () => import("./department"),
       ),
     },
   ],
 
-  guestPath: ["/home"],
+  guestPath: ["/department"],
 };
 
-export default HomeConfig;
+export default DepartmentConfig;

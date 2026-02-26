@@ -5,6 +5,9 @@ import jwtService from "app/service/jwt";
 export const SET_USER_DATA = "[USER] SET DATA";
 export const REMOVE_USER_DATA = "[USER] REMOVE DATA";
 export const USER_LOGGED_OUT = "[USER] LOGGED OUT";
+export const SET_USER_DETAIL = "SET_USER_DETAIL";
+export const SET_EMPLOYEE_DETAIL = "SET_EMPLOYEE_DETAIL";
+export const SET_FORGOT_PASS = "SET_FORGOT_PASS";
 
 /**
  * Set User Data
@@ -20,6 +23,16 @@ export function setUserData(user) {
     });
   };
 }
+
+export const setUserDetail = (userDetail) => ({
+  type: SET_USER_DETAIL,
+  payload: userDetail,
+});
+
+export const setEmployeeDetail = (employeeDetail) => ({
+  type: SET_EMPLOYEE_DETAIL,
+  payload: employeeDetail,
+});
 
 /**
  * Update User Settings

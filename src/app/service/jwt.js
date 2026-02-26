@@ -50,29 +50,13 @@ class JwtService extends Utils.EventEmitter {
         axios.post("/auth/login", param).then((res) => {
             if (res.data.status !== 200) return Promise.reject(res.data.message);
             this.setSession(res.data.data);
+            const decoded = jwtDecode(res.data.data.accessToken);
             const user = {
                 data: res.data.data,
-                role: "USER",
+                role: decoded.scope,
                 redirectUrl: "/home",
             };
             return user;
-        });
-
-    signInWithRefreshToken = () =>
-        axios.post("/auth/refresh-token", { refreshToken: this.getRefreshToken() })
-        .then((res) => {
-            if (!res.data.data) {
-                throw new Error("Failed to login with refresh token.");
-            }
-            this.setSession(res.data.data);
-            return {
-                data: res.data.data,
-                role: "USER",
-            };
-        })
-        .catch(() => {
-            this.logout();
-            throw new Error("Failed to login with refresh token.");
         });
 
     signInWithToken = async () => {
@@ -81,20 +65,86 @@ class JwtService extends Utils.EventEmitter {
             const res = await axios.post("/auth/refresh-token", {
                 refreshToken: this.getRefreshToken(),
             });
+            
             if (!res.data.data) {
                 this.logout();
-                throw new Error("Please login!!!");
+                throw new Error("Failed to login with refresh token.");
             }
             const dataToken = {
                 accessToken: res.data.data.accessToken,
                 refreshToken: res.data.data.refreshToken,
             };
             this.setSession(dataToken);
-            return dataToken.accessToken;
+
+            const decoded = jwtDecode(res.data.data.accessToken);
+
+            return {
+                data: res.data.data,
+                role: decoded.scope,
+            };
         } catch (error) {
             this.logout();
             throw new Error("Failed to login with refresh token.");
         }
+    }
+        // axios.post("/auth/refresh-token", { refreshToken: this.getRefreshToken() })
+        // .then((res) => {
+        //     if (!res.data.data) {
+        //         throw new Error("Failed to login with refresh token.");
+        //     }
+        //     this.setSession(res.data.data);
+        //     return {
+        //         data: res.data.data,
+        //         role: "USER",
+        //     };
+        // })
+        // .catch(() => {
+        //     this.logout();
+        //     throw new Error("Failed to login with refresh token.");
+        // });
+
+    // signInWithToken = async () => {
+    //     delete axios.defaults.headers.common.Authorization;
+    //     try {
+    //         const res = await axios.post("/auth/refresh-token", {
+    //             refreshToken: this.getRefreshToken(),
+    //         });
+            
+    //         if (!res.data.data) {
+    //             this.logout();
+    //             throw new Error("Please login!!!");
+    //         }
+    //         const dataToken = {
+    //             accessToken: res.data.data.accessToken,
+    //             refreshToken: res.data.data.refreshToken,
+    //         };
+    //         this.setSession(dataToken);
+    //         return dataToken.accessToken;
+    //     } catch (error) {
+    //         this.logout();
+    //         throw new Error("Failed to login with refresh token.");
+    //     }
+    // };
+
+    getUserDetail = () => {
+        const token = localStorage.getItem("jwt_access_token");
+        if (!token) {
+            return Promise.reject("No access token found");
+        }
+
+        const decoded = jwtDecode(token);
+    
+        return axios.get(`/users/${decoded.UId}`, null, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        })    
+        .then((res) => {
+            return res.data;
+        })
+        .catch((error) => {
+            throw error;
+        });
     };
 
     updateUserData = (user) => axios.post("/api/auth/user/update", { user });
@@ -124,6 +174,7 @@ class JwtService extends Utils.EventEmitter {
             pathname: "/",
         });
     };
+    
     logoutSpecial = () => {
         window.localStorage.removeItem(apiConfig.accessTokenKey);
         window.localStorage.removeItem(apiConfig.refreshTokenKey);
@@ -136,8 +187,11 @@ class JwtService extends Utils.EventEmitter {
             return false;
         }
         const decodedRefreshToken = jwtDecode(dataToken.refreshToken);
+        
         const decoded = jwtDecode(dataToken.accessToken);
+        
         const currentTime = Date.now() / 1000;
+        
         if (decoded.exp < currentTime && decodedRefreshToken.exp < currentTime) {
             console.warn("access token and refresh token expired");
             history.push("/");

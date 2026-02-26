@@ -4,15 +4,21 @@ import App from './app/App';
 import reportWebVitals from './reportWebVitals';
 import ThemeProvider from './app/layout/home_theme_provider';
 import AuthConfig from './app/main/auth/auth.config';
+import dayjs from "dayjs";
+import weekday from "dayjs/plugin/weekday";
+import localeData from "dayjs/plugin/localeData";
+
+dayjs.extend(weekday);
+dayjs.extend(localeData);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 if (AuthConfig.guestPath.indexOf(window.location.pathname) === -1) {
     root.render(
-        <React.StrictMode>
+        // <React.StrictMode>
             <ThemeProvider>
                 <App path={window.location.pathname} />
             </ThemeProvider>
-        </React.StrictMode>
+        // </React.StrictMode>
     )
 } else {
     root.render(
