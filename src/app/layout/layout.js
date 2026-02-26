@@ -13,18 +13,18 @@ import LayoutHome from "./layout_home";
 
 function Layout(props) {
 
-    console.log("AppContext: ", AppContext);
+    // console.log("AppContext: ", AppContext);
     
     const appContext = useContext(AppContext);
-    console.log("appContext: ", appContext);
+    // console.log("appContext: ", appContext);
 
     const { routes } = appContext;
     const location = useLocation();
     const { pathname } = location;
-    console.log("pathname: ", pathname);
+    // console.log("pathname: ", pathname);
     
     const matched = matchRoutes(routes, pathname)[0]; // tìm pathname trong routes
-    console.log("matched: ", matched); 
+    // console.log("matched: ", matched); 
 
     let layout = "auth";
     if (matched && matched.route.settings) {

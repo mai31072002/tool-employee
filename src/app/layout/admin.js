@@ -1,63 +1,69 @@
 import React, { useState } from 'react';
-import {
-  DesktopOutlined,
-  FileOutlined,
-  PieChartOutlined,
-  TeamOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
-import { Breadcrumb, Layout, Menu, theme } from 'antd';
-const { Header, Content, Footer, Sider } = Layout;
-function getItem(label, key, icon, children) {
-  return {
-    key,
-    icon,
-    children,
-    label,
-  };
-}
-const items = [
-  getItem('Option 1', '1', <PieChartOutlined />),
-  getItem('Option 2', '2', <DesktopOutlined />),
-  getItem('User', 'sub1', <UserOutlined />, [
-    getItem('Tom', '3'),
-    getItem('Bill', '4'),
-    getItem('Alex', '5'),
-  ]),
-  getItem('Team', 'sub2', <TeamOutlined />, [getItem('Team 1', '6'), getItem('Team 2', '8')]),
-  getItem('Files', '9', <FileOutlined />),
-];
+import PropTypes from "prop-types";
+import routes from "app/configs/routes.config";
+import { Route, Switch } from "react-router-dom";
+import "perfect-scrollbar/css/perfect-scrollbar.css";
+import { Layout } from 'antd';
+import Header from 'components/Header/header';
+import Sidebar from 'components/Sidebar/sidebar';
+import Footer from 'components/Footer/footer';
+import './admin.scss';
+
+const { Content } = Layout;
+
+// console.log('routes', routes);
+
 const AppLayout = () => {
-  const [collapsed, setCollapsed] = useState(false);
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
-  return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider collapsible collapsed={collapsed} onCollapse={value => setCollapsed(value)}>
-        <div className="demo-logo-vertical" />
-        <Menu theme="dark" defaultSelectedKeys={['1']} mode="inline" items={items} />
-      </Sider>
-      <Layout>
-        <Header style={{ padding: 0, background: colorBgContainer }} />
-        <Content style={{ margin: '0 16px' }}>
-          <Breadcrumb style={{ margin: '16px 0' }} items={[{ title: 'User' }, { title: 'Bill' }]} />
-          <div
+    const [collapsed, setCollapsed] = useState(false);
+    const loading = (
+        <div
             style={{
-              padding: 24,
-              minHeight: 360,
-              background: colorBgContainer,
-              borderRadius: borderRadiusLG,
+                height: "100%",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
             }}
-          >
-            Bill is a cat.
-          </div>
-        </Content>
-        <Footer style={{ textAlign: 'center' }}>
-          Ant Design ©{new Date().getFullYear()} Created by Ant UED
-        </Footer>
-      </Layout>
-    </Layout>
-  );
+        >
+        Loading...
+        </div>
+    );
+
+    return (
+        <>
+            <Layout style={{ minHeight: '100vh' }}>
+                <Sidebar collapsed={collapsed} onCollapse={setCollapsed} />
+                <Layout className='main-layout-content'>
+                    <Header />
+
+                    <Content className="main-layout">
+                        <React.Suspense fallback={loading}>
+                            <Switch>
+                                {routes.map((route, idx) =>
+                                    route.component ? (
+                                        <Route
+                                            key={String(idx)}
+                                            path={route.path}
+                                            exact={route.exact}
+                                            name={route.name}
+                                            render={(renderProps) => (
+                                                <route.component {...renderProps} />
+                                            )}
+                                        />
+                                    ) : null
+                                )}
+                            </Switch>
+                        </React.Suspense>
+                    </Content>
+
+                    {/* <Footer /> */}
+                </Layout>
+            </Layout>
+        </>
+    );
 };
+
+AppLayout.propTypes = {
+  children: PropTypes.element,
+};
+
 export default AppLayout;

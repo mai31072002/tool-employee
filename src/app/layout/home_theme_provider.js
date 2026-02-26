@@ -5,7 +5,7 @@ export const ThemeContext = createContext();
 const HomeThemeProvider = ({ children }) => {
 
     const [theme, setTheme] = useState({
-        backgroud: "#fff",
+        background: "#fff",
         text: "#000"
     });
 

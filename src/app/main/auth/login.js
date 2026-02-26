@@ -7,6 +7,7 @@ import axios from "axios";
 import * as Actions from 'app/auth/store/actions';
 import withReducer from "../../store/with_reducer";
 import reducer from "../../auth/store/reducers/auth.reducer";
+import ForgotPasswordModal from "./forgotPassword";
 import './index.scss';
 
 const { Title } = Typography;
@@ -17,6 +18,7 @@ const Login = () => {
     const history = useHistory();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [openForgot, setOpenForgot] = useState(false);
     const { login } = useSelector(state => state.login);
 
     useEffect(() => {
@@ -40,11 +42,11 @@ const Login = () => {
         switch (type) {
             case "success":
                 return notification[type]({
-                    message: "Đăng nhập thành công !!!",
+                    title: "Đăng nhập thành công !!!",
                 });
             case "error":
                 return notification[type]({
-                    message: "Đăng nhập không thành công !!!",
+                    title: "Đăng nhập không thành công !!!",
                     description:
                         "Vui lòng kiểm tra lại thông tin của tài khoản mà bạn vừa nhập .",
                 });
@@ -103,9 +105,9 @@ const Login = () => {
                             <Checkbox>Remember me</Checkbox>
                         </Form.Item>
 
-                        <a style={{ float: "right" }} href="/">
+                        <Button type="link" onClick={() => setOpenForgot(true)}>
                             Forgot password?
-                        </a>
+                        </Button>
                     </Form.Item>
 
                     <Form.Item>
@@ -120,6 +122,11 @@ const Login = () => {
                     </Form.Item>
                 </Form>
             </Card>
+
+            <ForgotPasswordModal
+                open={openForgot}
+                onCancel={() => setOpenForgot(false)}
+            />
         </div>
     );
 };

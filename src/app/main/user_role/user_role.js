@@ -1,0 +1,308 @@
+import React, { useEffect, useState } from "react";
+import { Table, Button, Row, Col, AutoComplete, message, Input, Pagination } from "antd";
+import { useDispatch, useSelector } from "react-redux";
+import * as Actions from "./store/actions";
+import reducer from "./store/reducers";
+import withReducer from "app/store/with_reducer";
+import { PlusOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
+import AddRoleForm from "./components/AddRole";
+import AddEditUser from "./components/AddEditUser";
+import { notificationPopup } from "app/helpers/common";
+import './index.scss';
+
+const RoleManagement = () => {
+    const dispatch = useDispatch();
+    const [page, setPage] = useState(1);
+    const [dataList ,setDataList] = useState([]);
+    const [checkDataList, setCheckDataList] = useState(false);
+    const [checkRole, setCheckRole] = useState(false);
+    const [openAddRole, setOpenAddRole] = useState(false);
+    const [openEdit, setOpenEdit] = useState(false);
+    const [editingUser, setEditingUser] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isSearching, setIsSearching] = useState(false);
+
+    // ===== REDUX STATE =====
+    const { data, limit, totalElement } = useSelector(
+        state => state.userRole.userRole.userList || []
+    );
+
+    const roleOptions = useSelector(
+        state => state.userRole.userRole.roleList?.data || []
+    );
+
+    const createRole = useSelector(
+        state => state.userRole.userRole.createRole || null
+    );
+
+    // ===== FETCH DATA =====
+    useEffect(() => {
+        dispatch(Actions.fetchListUser(0, 10));
+        dispatch(Actions.fetchListRole());
+    }, [dispatch]);
+
+    useEffect(() => {
+        setDataList(data || []);
+        
+    }, [data]);
+
+    useEffect(() => {
+        if (checkDataList) {
+            dispatch(Actions.fetchListUser(page - 1, limit)).finally(() =>
+                setCheckDataList(false)
+            );
+        }
+    }, [checkDataList, page, limit, dispatch]);
+
+    useEffect(() => {
+        if (checkRole) {
+            dispatch(Actions.fetchListRole());
+        }
+    }, [dispatch, checkRole]);
+
+    useEffect(() => {
+        if (createRole) {
+            notificationPopup(
+                createRole.status,
+                createRole.message
+            );
+        }
+    }, [createRole]);
+
+    // ===== HANDLE ROLE CHANGE =====
+    const refreshList = (pageNumber = 1, pageSize = limit || 10) => {
+        dispatch(Actions.fetchListUser(pageNumber - 1, pageSize));
+    };
+
+    const refreshSearch = (pageNumber = 1, pageSize = limit || 10) => {
+        dispatch(Actions.fetchSearchUser( searchTerm.trim(), pageNumber - 1, pageSize));
+    };
+
+    const handlePageChange = (pageNumber, pageSize) => {
+         setPage(pageNumber);
+        if (isSearching) {
+            refreshSearch(pageNumber, pageSize)
+        } else {
+            refreshList(pageNumber, pageSize);
+        }
+    };
+
+    // ===== HANDLE SAVE =====
+    const handleUpdateUser = (data) => {    
+        dispatch(Actions.updateUser(data.userId, data));
+        setOpenEdit(false);
+        setEditingUser(null);
+        setCheckDataList(true);
+    };
+
+
+    const handleAddRole = (data) => {
+        dispatch(Actions.CreateRole(data));
+        setOpenAddRole(false);
+        setCheckRole(true);
+    };
+
+    const handleSearch = (keyword) => {
+        setSearchTerm(keyword);
+
+        const trimmed = keyword.trim();
+        if (!trimmed) {
+            setIsSearching(false);
+            refreshList(1, limit);
+            return;
+        }
+        setIsSearching(true);
+        dispatch(Actions.fetchSearchUser(trimmed, 0, limit)).catch(() => {
+            message.error("Không thể tìm kiếm ứng viên");
+        });
+    };
+
+    const mapRoleNamesToDescriptions = (roleNames = [], roleOptions = []) => {
+        if (!Array.isArray(roleNames) || !Array.isArray(roleOptions)) {
+            return [];
+        }
+
+        return roleNames.map(roleName => {
+            const role = roleOptions.find(r => r.roleName === roleName);
+            return role ? role.discription : roleName;
+        });
+    };
+
+    // ===== TABLE COLUMNS =====
+    const columns = [
+        {
+            title: "Username",
+            dataIndex: "username",
+            key: "username",
+        },
+        {
+            title: "Email",
+            dataIndex: "email",
+            key: "email",
+        },
+        {
+            title: "Roles",
+            key: "roles",
+            render: (record) => {
+                const descriptions = mapRoleNamesToDescriptions(record.roles, roleOptions);
+
+                return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {descriptions.map(role => (
+                            <span key={role}>{role}</span>
+                        ))}
+                    </div>
+                );
+            }
+        },
+        {
+            title: "Actions",
+            key: "actions",
+            align: "center",
+            render: (_, record) => (
+                <Button
+                    type="text"
+                    onClick={() => {
+                        setEditingUser(record);
+                        setOpenEdit(true);
+                    }}
+                >
+                    <EditOutlined style={{ color: "#1677ff" }} />
+                </Button>
+            )
+        }
+    ];
+
+    const autoCompleteOptions =
+        dataList?.length > 0
+            ? dataList.map((item) => ({
+                value: `${item.username || ""}`.trim(),
+                label: (
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span style={{ color: "#000" }}>
+                            <b>
+                            {item.username}
+                            </b>
+                        </span>
+                    </div>
+                ),
+            }))
+        : [];
+
+    return (
+        <Row className="user-role-page  page-base">
+            <Col span="24" className="user-role-top">
+                <h2 className="user-role-title">Quản lý phân quyền</h2>
+                <Button type="primary" shape="round" icon={<PlusOutlined/>} onClick={() => setOpenAddRole(true)}>
+                    Thêm Role mới
+                </Button>
+            </Col>
+            <Col span={24} className="header-candidate">
+                <Row>
+                    <Col span={24} className="search-filter">
+                        <AutoComplete
+                            value={searchTerm}
+                            onChange={setSearchTerm}
+                            onSearch={handleSearch}
+                            className="dropdown-search"
+                            options={autoCompleteOptions}
+                        >
+                            <Input
+                                placeholder="Tìm kiếm theo tên, mã công nhân, công ty..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        handleSearch(searchTerm);
+                                    }
+                                }}
+                                suffix={
+                                    <Button
+                                        type="default"
+                                        icon={<SearchOutlined />}
+                                        onClick={() => handleSearch(searchTerm)}
+                                        style={{
+                                        color: "#999",
+                                        background: "#f5f5f7",
+                                        border: "none",
+                                        }}
+                                    />
+                                }
+                                allowClear
+                                className="candidate-search"
+                            />
+                        </AutoComplete>
+                    </Col>
+                </Row>
+            </Col>
+            <Col span="24" className="">
+                <div className="">
+                    <div>
+                        <Table
+                            rowKey="userId"
+                            columns={columns}
+                            dataSource={dataList}
+                            pagination={false}
+                            // pagination = {{
+                            //     current: page,
+                            //     pageSize: limit,
+                            //     total: totalElement,
+                            //     showSizeChanger: true,
+                            //     showTotal: () => `Tổng ${totalElement} nhân viên`,
+                            //     onChange: handlePageChange,
+                            //     onShowSizeChange: handlePageChange,
+                            // }}
+                            scroll={{
+                                y: "calc(80vh - 200px)",
+                            }}
+                        />
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                marginTop: 16,
+                            }}
+                        >
+                            {/* BÊN TRÁI */}
+                            <div>
+                                Tổng tài khoản : {totalElement}
+                            </div>
+
+                            {/* BÊN PHẢI */}
+                            <Pagination
+                                size='small'
+                                current={page}
+                                pageSize={limit}
+                                total={totalElement}
+                                showSizeChanger
+                                onChange={handlePageChange}
+                                onShowSizeChange={handlePageChange}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <AddRoleForm
+                    open={openAddRole}
+                    onCancel={() => setOpenAddRole(false)}
+                    onSubmit={handleAddRole}
+                />
+
+                <AddEditUser
+                    open={openEdit}
+                    user={editingUser}
+                    roleOptions={roleOptions}
+                    onCancel={() => {
+                        setOpenEdit(false);
+                        setEditingUser(null);
+                    }}
+                    onSubmit={handleUpdateUser}
+                />
+
+            </Col>
+        </Row>
+    );
+};
+
+export default withReducer("userRole", reducer)(RoleManagement);
